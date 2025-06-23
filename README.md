@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/release/devmrcarnes/grab.js.svg)](https://github.com/grab-dev/grab.js/releases)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/grab-js)](https://bundlephobia.com/package/grab-js)
+[![Bundle Size](https://deno.bundlejs.com/?q=github:yourusername/Grab.js/main/dist/grab.min.js&badge=detailed)](https://bundlejs.com/?q=github:yourusername/Grab.js/main/dist/grab.min.js)
 
 Zero-dependency HTTP client with retries, caching, circuit breakers, and ETags. Single file, no build tools required.
 
