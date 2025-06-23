@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grab.js Demo - No Build Tools Required!</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        .container {
+            background: #000;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        .output {
+            background: #111;
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #ffff00; }
+        h1, h2 { color: #00ff00; text-align: center; }
+        .ascii-art {
+            text-align: center;
+            white-space: pre;
+            font-family: monospace;
+            color: #00ff00;
+            font-size: 20px;
+            line-height: 1;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="ascii-art">
+    ____           _
+    / ___|_ __ __ _| |__
+    | |  _| '__/ _` | '_ \
+    | |_| | | | (_| | |_) |
+    \____|_|  \__,_|_.__/
+
+</div>
+
+<h1>Grab.js Live Demo</h1>
+<p style="text-align: center; color: #ffff00;">
+    Because sometimes you just want to grab data from APIs without installing the entire internet.
+</p>
+
+<div class="container">
+    <h2>Basic Requests</h2>
+    <button onclick="testGet()">GET Request</button>
+    <button onclick="testPost()">POST Request</button>
+    <button onclick="testError()">Test Error Handling</button>
+    <button onclick="testCache()">Test Caching</button>
+    <div id="basic-output" class="output"></div>
+</div>
+
+<div class="container">
+    <h2>Advanced Features</h2>
+    <button onclick="testRetry()">Test Retries</button>
+    <button onclick="testInterceptors()">Test Interceptors</button>
+    <button onclick="testCircuitBreaker()">Circuit Breaker Stats</button>
+    <button onclick="testETags()">Test ETags</button>
+    <button onclick="testDeduplication()">Request Deduplication</button>
+    <button onclick="clearCache()">Clear Cache</button>
+    <div id="advanced-output" class="output"></div>
+</div>
+
+<div class="container">
+    <h2>Performance & Stats</h2>
+    <button onclick="showStats()">Show All Stats</button>
+    <button onclick="loadTest()">Load Test (20 requests)</button>
+    <button onclick="testPriority()">Test Priority Hints</button>
+    <button onclick="resetEverything()">Reset Everything</button>
+    <div id="stats-output" class="output"></div>
+</div>
+
+<script type="module">
+    import { Grab, HttpError, NetworkError, TimeoutError } from '../src/Grab.js';
+
+    // Initialize our API client
+    const api = new Grab({
+        baseUrl: 'https://jsonplaceholder.typicode.com',
+        timeout: 10000,
+        cache: {
+            enabled: true,
+            ttl: 30000,  // 30 seconds for demo
+            maxSize: 50
+        },
+        retry: {
+            attempts: 3,
+            delay: (attempt) => 1000 * attempt  // 1s, 2s, 3s
+        }
+    });
+
+    // Add some interceptors for fun
+    api.use({
+        request: (config) => {
+            log('basic', `-> ${config.method || 'GET'} ${config.url}`, 'info');
+            return config;
+        },
+        response: (response) => {
+            const cacheStatus = response.fromCache ? ' (cached)' : ' (network)';
+            log('basic', `<- ${response.status} ${response.url}${cacheStatus}`, 'success');
+            return response;
+        },
+        error: (error) => {
+            log('basic', `X ${error.name}: ${error.message}`, 'error');
+            throw error;
+        }
+    });
+
+    // Utility function for logging
+    function log(outputId, message, type = 'info') {
+        const output = document.getElementById(`${outputId}-output`);
+        const timestamp = new Date().toLocaleTimeString();
+        const className = type;
+        const line = `[${timestamp}] ${message}`;
+
+        output.innerHTML += `<span class="${className}">${line}</span>\n`;
+        output.scrollTop = output.scrollHeight;
+    }
+
+    // Basic GET request
+    async function testGet() {
+        try {
+            log('basic', 'Testing GET request...', 'info');
+            const response = await api.get('/users/1');
+            log('basic', `User: ${response.data.name} (${response.data.email})`, 'success');
+        } catch (error) {
+            log('basic', `Error: ${error.message}`, 'error');
+        }
+    }
+
+    // Basic POST request
+    async function testPost() {
+        try {
+            log('basic', 'Testing POST request...', 'info');
+            const response = await api.post('/users', {
+                body: {
+                    name: 'Test User',
+                    email: 'test@example.com',
+                    username: 'testuser'
+                }
+            });
+            log('basic', `Created user with ID: ${response.data.id}`, 'success');
+        } catch (error) {
+            log('basic', `Error: ${error.message}`, 'error');
+        }
+    }
+
+    // Test error handling
+    async function testError() {
+        try {
+            log('basic', 'Testing error handling (404)...', 'info');
+            await api.get('/users/999999');
+        } catch (error) {
+            if (error instanceof HttpError) {
+                log('basic', `HTTP Error: ${error.status} - ${error.message}`, 'error');
+            } else {
+                log('basic', `Other Error: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    // Test caching
+    async function testCache() {
+        try {
+            log('basic', 'Testing cache (watch the network tab!)...', 'info');
+
+            // First request
+            const start1 = performance.now();
+            await api.get('/users/2');
+            const time1 = Math.round(performance.now() - start1);
+            log('basic', `First request: ${time1}ms (network)`, 'info');
+
+            // Second request (should be cached)
+            const start2 = performance.now();
+            await api.get('/users/2');
+            const time2 = Math.round(performance.now() - start2);
+            log('basic', `Second request: ${time2}ms (cache)`, 'success');
+
+            log('basic', `Speed improvement: ${Math.round((time1 - time2) / time1 * 100)}%`, 'success');
+        } catch (error) {
+            log('basic', `Error: ${error.message}`, 'error');
+        }
+    }
+
+    // Test retry mechanism
+    async function testRetry() {
+        try {
+            log('advanced', 'Testing retry with bad URL...', 'info');
+            // This will fail and retry
+            await api.get('https://this-domain-does-not-exist-12345.com/test');
+        } catch (error) {
+            log('advanced', `After retries: ${error.message}`, 'error');
+        }
+    }
+
+    // Test interceptors
+    async function testInterceptors() {
+        log('advanced', 'Testing interceptors (check the basic output too)...', 'info');
+
+        // Create a temporary API with custom interceptors
+        const tempApi = new Grab({
+            baseUrl: 'https://jsonplaceholder.typicode.com'
+        });
+
+        tempApi.use({
+            request: (config) => {
+                log('advanced', `Interceptor: Adding timestamp to request`, 'info');
+                if (config.body && typeof config.body === 'object') {
+                    config.body.timestamp = Date.now();
+                }
+                return config;
+            },
+            response: (response) => {
+                log('advanced', `Interceptor: Response received with ${Object.keys(response.data).length} properties`, 'success');
+                return response;
+            }
+        });
+
+        try {
+            const response = await tempApi.get('/users/3');
+            log('advanced', `Intercepted response: ${response.data.name}`, 'success');
+        } catch (error) {
+            log('advanced', `Error: ${error.message}`, 'error');
+        }
+    }
+
+    // Show circuit breaker stats
+    function testCircuitBreaker() {
+        const stats = api.getCircuitBreakerStats();
+        log('advanced', `Circuit Breaker Stats:`, 'info');
+        log('advanced', `- State: ${stats.state}`, 'info');
+        log('advanced', `- Failures: ${stats.failures}`, 'info');
+        log('advanced', `- Successes: ${stats.successes}`, 'info');
+        log('advanced', `- Healthy: ${stats.isHealthy}`, stats.isHealthy ? 'success' : 'error');
+    }
+
+    // Test ETags (simulated)
+    async function testETags() {
+        log('advanced', 'Testing ETag functionality...', 'info');
+
+        // Make a request that will be cached
+        const response1 = await api.get('/users/1');
+        log('advanced', `ETag from response: ${response1.etag || 'none'}`, 'info');
+
+        // Make the same request again - this would use If-None-Match if ETag exists
+        const response2 = await api.get('/users/1');
+        log('advanced', `Second request cached: ${response2.fromCache || false}`, 'success');
+    }
+
+    // Test request deduplication
+    async function testDeduplication() {
+        log('advanced', 'Testing request deduplication...', 'info');
+
+        const start = performance.now();
+
+        // Fire off 5 identical requests simultaneously
+        const promises = Array(5).fill().map(() => api.get('/users/4'));
+
+        try {
+            const results = await Promise.all(promises);
+            const time = Math.round(performance.now() - start);
+
+            log('advanced', `5 concurrent requests completed in ${time}ms`, 'success');
+            log('advanced', `All requests returned same data: ${results.every(r => r.data.id === results[0].data.id)}`, 'success');
+            log('advanced', 'Only one network request was made (check network tab)', 'info');
+        } catch (error) {
+            log('advanced', `Deduplication test failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Test priority hints
+    async function testPriority() {
+        log('stats', 'Testing priority hints...', 'info');
+
+        try {
+            // High priority request
+            const highPriorityStart = performance.now();
+            await api.get('/users/5', { priority: 'high' });
+            const highPriorityTime = performance.now() - highPriorityStart;
+
+            // Low priority request
+            const lowPriorityStart = performance.now();
+            await api.get('/posts/1', { priority: 'low' });
+            const lowPriorityTime = performance.now() - lowPriorityStart;
+
+            log('stats', `High priority request: ${Math.round(highPriorityTime)}ms`, 'success');
+            log('stats', `Low priority request: ${Math.round(lowPriorityTime)}ms`, 'info');
+            log('stats', 'Priority hints sent to browser (check DevTools)', 'info');
+        } catch (error) {
+            log('stats', `Priority test failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Clear cache
+    function clearCache() {
+        api.clearCache();
+        log('advanced', 'Cache cleared!', 'success');
+    }
+
+    // Show all stats
+    function showStats() {
+        const cacheStats = api.getCacheStats();
+        const cbStats = api.getCircuitBreakerStats();
+
+        log('stats', 'Cache Statistics:', 'info');
+        log('stats', `- Size: ${cacheStats.size}/${cacheStats.maxSize}`, 'info');
+        log('stats', `- TTL: ${cacheStats.ttl}ms`, 'info');
+        log('stats', `- Pending: ${cacheStats.pending}`, 'info');
+        log('stats', `- ETags: ${cacheStats.etags}`, 'info');
+
+        log('stats', 'Circuit Breaker Statistics:', 'info');
+        log('stats', `- State: ${cbStats.state}`, 'info');
+        log('stats', `- Failures: ${cbStats.failures}`, 'info');
+        log('stats', `- Successes: ${cbStats.successes}`, 'info');
+        log('stats', `- Health: ${cbStats.isHealthy ? 'GOOD' : 'BAD'}`, cbStats.isHealthy ? 'success' : 'error');
+    }
+
+    // Load test
+    async function loadTest() {
+        log('stats', 'Starting load test (20 concurrent requests)...', 'info');
+        const start = performance.now();
+
+        const promises = [];
+        for (let i = 1; i <= 20; i++) {
+            promises.push(api.get(`/users/${(i % 10) + 1}`));
+        }
+
+        try {
+            const results = await Promise.all(promises);
+            const time = Math.round(performance.now() - start);
+            log('stats', `Completed 20 requests in ${time}ms`, 'success');
+            log('stats', `Average: ${Math.round(time / 20)}ms per request`, 'success');
+
+            // Count cache hits
+            const cacheStats = api.getCacheStats();
+            log('stats', `Cache now has ${cacheStats.size} entries`, 'info');
+
+            // Check for cache hits
+            const cacheHits = results.filter(r => r.fromCache).length;
+            log('stats', `Cache hits: ${cacheHits}/20 requests`, 'success');
+        } catch (error) {
+            log('stats', `Load test failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Reset everything
+    function resetEverything() {
+        api.clearCache();
+        api.resetCircuitBreaker();
+
+        // Clear all outputs
+        document.getElementById('basic-output').innerHTML = '';
+        document.getElementById('advanced-output').innerHTML = '';
+        document.getElementById('stats-output').innerHTML = '';
+
+        log('stats', 'Everything reset! Ready for more testing.', 'success');
+    }
+
+    // Make functions globally available for onclick handlers
+    window.testGet = testGet;
+    window.testPost = testPost;
+    window.testError = testError;
+    window.testCache = testCache;
+    window.testRetry = testRetry;
+    window.testInterceptors = testInterceptors;
+    window.testCircuitBreaker = testCircuitBreaker;
+    window.testETags = testETags;
+    window.testDeduplication = testDeduplication;
+    window.testPriority = testPriority;
+    window.clearCache = clearCache;
+    window.showStats = showStats;
+    window.loadTest = loadTest;
+    window.resetEverything = resetEverything;
+
+    // Show the initial message
+    window.addEventListener('load', () => {
+        log('basic', 'Grab.js loaded and ready!', 'success');
+        log('basic', 'Try the buttons above to test different features.', 'info');
+        log('basic', 'Open browser dev tools to see network requests.', 'info');
+        log('basic', 'Features: Caching, ETags, Deduplication, Priority Hints', 'info');
+    });
+</script>
+
+<!-- Fallback for browsers that don't support modules -->
+<script nomodule>
+    document.body.innerHTML =
+        '<div style="color: #ff0000; text-align: center; padding: 50px;">' +
+        '<h1>Browser Not Supported</h1>' +
+        '<p>This demo requires a modern browser with ES6 module support.</p>' +
+        '<p>Please use Chrome 61+, Firefox 60+, Safari 10.1+, or Edge 16+</p>' +
+        '</div>';
+</script>
+</body>
+</html>

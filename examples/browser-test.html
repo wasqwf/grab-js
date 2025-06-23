@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grab.js Browser Tests</title>
+    <style>
+        body { font-family: 'Consolas', monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .pass { color: #4ec9b0; }
+        .fail { color: #f44747; }
+        .test { margin: 10px 0; padding: 5px; }
+        h1 { color: #569cd6; }
+        .loading { color: #ffff00; }
+    </style>
+</head>
+<body>
+<h1>Grab.js Browser Tests</h1>
+<div id="results"></div>
+
+<script type="module">
+    import { Grab, HttpError, NetworkError, TimeoutError } from '../../src/Grab.js';
+
+    const results = document.getElementById('results');
+
+    function log(message, isError = false) {
+        const div = document.createElement('div');
+        div.className = `test ${isError ? 'fail' : 'pass'}`;
+        div.textContent = (isError ? '✗ ' : '✓ ') + message;
+        results.appendChild(div);
+    }
+
+    async function runBrowserTests() {
+        log('Browser environment: Starting tests...');
+
+        try {
+            // Test 1: Basic instantiation
+            const api = new Grab({ baseUrl: 'https://jsonplaceholder.typicode.com' });
+            log('Grab instance created');
+
+            // Test 2: Real network request
+            const response = await api.get('/users/1');
+            if (response.data && response.data.id === 1) {
+                log('Network request successful');
+            } else {
+                log('Unexpected response structure', true);
+                console.log('Response data:', response.data);
+            }
+
+            // Test 3: Caching performance
+            const start = performance.now();
+            await api.get('/users/1');  // Should be cached
+            const duration = performance.now() - start;
+
+            if (duration < 50) {
+                log(`Caching works (${duration.toFixed(1)}ms)`);
+            } else {
+                log(`Caching slow (${duration.toFixed(1)}ms)`, true);
+            }
+
+            // Test 4: Error handling
+            try {
+                await api.get('/nonexistent/endpoint/12345');
+                log('Should have thrown error', true);
+            } catch (error) {
+                if (error instanceof HttpError) {
+                    log('Error handling works');
+                } else {
+                    log(`Wrong error type: ${error.constructor.name}`, true);
+                    console.error('Unexpected error:', error);
+                }
+            }
+
+            // Test 5: Stats
+            const stats = api.getCacheStats();
+            log(`Cache stats: ${stats.size} entries`);
+
+            // Test 6: Deduplication
+            const dedupStart = performance.now();
+            const [r1, r2, r3] = await Promise.all([
+                api.get('/users/2'),
+                api.get('/users/2'),
+                api.get('/users/2')
+            ]);
+            const dedupDuration = performance.now() - dedupStart;
+
+            log(`Deduplication test: ${dedupDuration.toFixed(1)}ms for 3 concurrent requests`);
+
+            // Test 7: Error types are properly imported
+            try {
+                throw new NetworkError('Test network error', '/test');
+            } catch (error) {
+                if (error instanceof NetworkError) {
+                    log('Error classes imported correctly');
+                } else {
+                    log('Error classes not imported', true);
+                }
+            }
+
+            // Test 8: Different HTTP methods
+            try {
+                const postResponse = await api.post('/posts', {
+                    body: { title: 'Test', body: 'Test content', userId: 1 }
+                });
+                if (postResponse.data && postResponse.data.id) {
+                    log('POST request works');
+                } else {
+                    log('POST request failed', true);
+                }
+            } catch (error) {
+                log(`POST request error: ${error.message}`, true);
+            }
+
+            // Test 9: Circuit breaker stats
+            const cbStats = api.getCircuitBreakerStats();
+            log(`Circuit breaker: ${cbStats.state} (${cbStats.failures} failures)`);
+
+            log('🎉 All browser tests completed!');
+
+        } catch (error) {
+            log(`Test failed: ${error.message}`, true);
+            console.error('Full error:', error);
+        }
+    }
+
+    log('Loading Grab.js...', false);
+
+    runBrowserTests().catch(error => {
+        log(`Critical error: ${error.message}`, true);
+        console.error('Critical error:', error);
+    });
+</script>
+
+<!-- Fallback for browsers that don't support modules -->
+<script nomodule>
+    document.getElementById('results').innerHTML =
+        '<div class="test fail">❌ This browser doesn\'t support ES6 modules. Please use a modern browser.</div>';
+</script>
+</body>
+</html>

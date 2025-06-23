@@ -1,0 +1,37 @@
+{
+  "name": "grab-js",
+  "version": "1.2.0",
+  "type": "module",
+  "description": "HTTP client in 4KB. Circuit breakers, ETags, request deduplication, and more.",
+  "main": "src/Grab.js",
+  "browser": "dist/grab.min.js",
+  "files": ["src", "dist"],
+  "keywords": ["http", "client", "fetch", "axios", "circuit-breaker", "cache", "etag"],
+  "author": "devmrcarnes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devmrcarnes/grab.js"
+  },
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:all": "node tests/run-tests.js",
+    "test:http": "node tests/run-tests.js http",
+    "test:network": "node tests/run-tests.js network",
+    "test:timeout": "node tests/run-tests.js timeout",
+    "test:interceptors": "node tests/run-tests.js interceptors",
+    "test:config": "node tests/run-tests.js config",
+    "test:memory": "node tests/run-tests.js memory",
+    "test:unit": "node tests/run-tests.js config",
+    "test:performance": "node tests/run-tests.js memory",
+    "test:errors": "node tests/run-tests.js http network timeout",
+    "test:watch": "node --watch tests/run-tests.js",
+    "test:browser": "python -m http.server 8080 && open http://localhost:8080/tests/browser-test.html",
+    "dev": "python -m http.server 8000",
+    "build": "node scripts/minify.js",
+    "minify": "node scripts/minify.js",
+    "demo": "python -m http.server 8080 && open http://localhost:8080/demo.html"
+  },
+  "types": "grab.d.ts",
+  "typings": "grab.d.ts"
+}
