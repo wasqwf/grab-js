@@ -587,8 +587,7 @@ class Grab {
                 const shouldRetry = this.retryCondition(error);
 
                 if (isFinalAttempt || !shouldRetry) {
-                    const finalError = await callErrorInterceptors(this.errorInterceptors, error);
-                    throw finalError;
+                    throw await callErrorInterceptors(this.errorInterceptors, error);
                 }
 
                 let delay = typeof this.retryDelay === 'function'
@@ -624,7 +623,7 @@ class Grab {
             if (config.signal.aborted) {
                 controller.abort();
             } else {
-                config.signal.addEventListener('abort', () => controller.abort());
+                config.signal.addEventListener('abort', () => controller.abort(), { once: true });
             }
         }
 
@@ -851,7 +850,7 @@ const normalizeCache = (c = {}) => ({
 });
 
 const normalizeRetry = (r = {}) => ({
-    attempts: r.attempts >= 0 ? clamp(toInt(r.attempts, 3), 0, 10) : 3,
+    attempts: r.attempts >= 0 ? clamp(toInt(r.attempts, DEFAULT_RETRY_ATTEMPTS), 0, 10) : DEFAULT_RETRY_ATTEMPTS,
     delay: typeof r.delay === 'function' ? r.delay :
         isNum(r.delay) && r.delay >= 0 ? r.delay : null,
     condition: typeof r.condition === 'function' ? r.condition : null,
