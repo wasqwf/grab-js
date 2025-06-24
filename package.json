@@ -1,6 +1,6 @@
 {
   "name": "@grab-dev/grab-js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "HTTP client in 4KB. Circuit breakers, ETags, request deduplication, and more.",
   "main": "src/Grab.js",
   "files": [
