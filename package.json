@@ -32,6 +32,10 @@
     "minify": "node scripts/minify.js",
     "demo": "python -m http.server 8080 && open http://localhost:8080/demo.html"
   },
+  "bugs": {
+    "url": "https://github.com/grab-dev/grab-js/issues"
+  },
+  "homepage": "https://github.com/grab-dev/grab-js#readme"
   "types": "grab.d.ts",
-  "typings": "grab.d.ts"
+  "typings": "grab.d.ts",
 }
