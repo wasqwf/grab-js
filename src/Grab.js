@@ -990,3 +990,8 @@ async function parseResponse(response, responseType, maxSize) {
 }
 
 export { Grab, HttpError, NetworkError, TimeoutError };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Grab, HttpError, NetworkError, TimeoutError };
+    module.exports.default = { Grab, HttpError, NetworkError, TimeoutError };
+}

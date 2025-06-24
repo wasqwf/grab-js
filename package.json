@@ -7,7 +7,14 @@
     "src",
     "dist"
   ],
+  "module": "src/Grab.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/Grab.js",
+      "require": "./src/Grab.js"
+    }
+  },
   "browser": "dist/grab.min.js",
   "keywords": [
     "http",
