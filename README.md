@@ -1,6 +1,9 @@
 # Grab.js - HTTP Client for Constrained Environments
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://badge.fury.io/js/@grab-dev%2Fgrab-js.svg)](https://badge.fury.io/js/@grab-dev%2Fgrab-js)
+[![npm downloads](https://img.shields.io/npm/dm/@grab-dev/grab-js.svg)](https://www.npmjs.com/package/@grab-dev/grab-js)
+[![npm total downloads](https://img.shields.io/npm/dt/@grab-dev/grab-js.svg)](https://www.npmjs.com/package/@grab-dev/grab-js)
 
 Zero-dependency HTTP client with retries, caching, circuit breakers, and ETags. Single file, no build tools required.
 
