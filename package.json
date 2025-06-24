@@ -11,8 +11,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/devmrcarnes/grab.js"
-  },
+    "url": "https://github.com/grab-dev/grab-js"
+  }
   "scripts": {
     "test": "node tests/run-tests.js",
     "test:all": "node tests/run-tests.js",
