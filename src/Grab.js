@@ -825,6 +825,10 @@ class Grab {
      * Default retry condition
      */
     defaultRetryCondition(error) {
+        // Don't retry POST/PUT by default for safety
+        if (this.method === 'POST' && error instanceof HttpError) {
+            return false;
+        }
         if (error instanceof NetworkError || error instanceof TimeoutError) {
             return true;
         }
